@@ -1,0 +1,78 @@
+import cv2
+import cvzone
+from cvzone.SelfiSegmentationModule import SelfiSegmentation
+
+cap = cv2.VideoCapture(0)
+cap.set(1, 640)
+cap.set(1, 480)
+
+if not cap.isOpened():
+    print("Error: Could not open webcam.")
+    exit()
+
+segmentor = SelfiSegmentation()
+
+success, frame = cap.read()
+frame_height, frame_width = frame.shape[:2]
+
+def load_background(image_path):
+    img = cv2.imread(image_path)
+    if img is not None:
+        img = cv2.resize(img, (frame_width, frame_height))
+    return img
+
+bg_image = load_background('1.jpg')
+if bg_image is None:
+    print("Error: Could not load default background image.")
+    exit()
+
+def image_change(image_name):
+    global bg_image
+    print(f"Changing background to: {image_name}")
+    temp_image = load_background(f"{image_name}.jpg")
+    if temp_image is None:
+        print(f"Error: Could not load image for {image_name}. Keeping previous background.")
+    else:
+        bg_image = temp_image
+
+# 🖥️ Show normal webcam feed first
+while True:
+    success, frame = cap.read()
+    if not success:
+        print("Failed to grab frame.")
+        break
+
+    cv2.imshow("Live Webcam", frame)
+    key = cv2.waitKey(1)
+    if key == 13:  # Enter key to start background removal
+        break
+
+cv2.destroyWindow("Live Webcam")
+
+# 🖥️ Now start background replacement
+while True:
+    success, frame = cap.read()
+    if not success:
+        print("Failed to grab frame.")
+        break
+
+    video_remove_bg = segmentor.removeBG(frame, bg_image, cutThreshold=0.3)
+
+    cv2.imshow("Background Replacement Active", video_remove_bg)
+
+    key = cv2.waitKey(1)
+    if key == 13:  # Enter again to exit
+        break
+    elif key == ord('1'):
+        image_change('1')
+    elif key == ord('2'):
+        image_change('2')
+    elif key == ord('3'):
+        image_change('3')
+    elif key == ord('4'):
+        image_change('4')
+    elif key == ord('5'):
+        image_change('5')
+
+cap.release()
+cv2.destroyAllWindows()
